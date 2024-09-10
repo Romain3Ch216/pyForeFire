@@ -495,7 +495,7 @@ def computeSpeed(atime):
     return speed
 
 
-def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None, save_exp=None):
+def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None, title=None, save_exp=None):
     """
     Used for plot 4 axis graph, with Heatflux, Fuels, Altitude plotted under simulation, 
     and Statistics for the last axis.
@@ -623,6 +623,10 @@ def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None, 
 
     ax.grid()
     ax.axis('equal')
+
+    if title:
+        plt.title(title)
+        
     if save_exp:
         plt.savefig(os.path.join(save_exp, 'simulation_plot.pdf'),  dpi=100, bbox_inches='tight', pad_inches=0.05)
     else:

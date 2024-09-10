@@ -57,8 +57,11 @@ def hill_simulation(config):
     # plt.imshow(altitude_map); plt.show()  
 
     fuel_map = np.ones_like(altitude_map)
-    fuel_map[:, :domain_width // 2] = fuel_type[0]
-    fuel_map[:, domain_width // 2:] = fuel_type[1]
+    # fuel_map[:, :domain_width // 2] = fuel_type[0]
+
+    fuel_map[np.tril(fuel_map, k=-100) == 0] = fuel_type[0]
+    fuel_map[np.tril(fuel_map, k=-100) == 1] = fuel_type[1]
+    fuel_map[domain_height // 2 :,:] = fuel_type[1]
     
     horizontal_wind = config['horizontal_wind']
     vertical_wind = config['vertical_wind']
@@ -104,11 +107,17 @@ def hill_simulation(config):
         float(simulation.ff["SWy"]) + float(simulation.ff["Ly"]))
     
     if save_exp:
-        plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None, save_exp=save_exp)
+        plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None, title=propagation_model, save_exp=save_exp)
         with open(os.path.join(save_exp, 'config.yaml'), 'w') as outfile:
             yaml.dump(config, outfile, default_flow_style=False)
+
+        fig = plt.figure()
+        plt.imshow(altitude_map)
+        plt.colorbar()
+        plt.title('Altitude (m)')
+        plt.savefig(os.path.join(save_exp, 'altitude.pdf'),  dpi=100, bbox_inches='tight', pad_inches=0.05)
     else:
-        plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None)
+        plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, title=propagation_model)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
