@@ -4,6 +4,8 @@ import argparse
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
+import os
 import pdb
 
 
@@ -17,6 +19,14 @@ def hill(x, mean, cov, height=100):
 
 
 def hill_simulation(config):
+    if 'save_exp' in config:
+        save_exp = os.path.join(
+            config['save_exp'], 
+            '{:%Y-%m-%d--%H:%M:%S}'.format(datetime.datetime.now()))
+        os.makedirs(save_exp)
+    else:
+        save_exp = None
+                            
     propagation_model = config['propagation_model']
     nn_ros_model_path = config['nn_ros_model_path']
 
@@ -27,7 +37,6 @@ def hill_simulation(config):
     fuel_type = config['fuel_type']
     domain_width = config['domain_width']
     domain_height = config['domain_height']
-    domain = (0, 0, domain_width, domain_height)
 
     # Create hill with a 2D gaussian
     mean = np.array([domain_height // 2, domain_width //2])
@@ -49,7 +58,7 @@ def hill_simulation(config):
 
     fuel_map = np.ones_like(altitude_map)
     fuel_map[:, :domain_width // 2] = fuel_type[0]
-    fuel_map[:, :domain_width // 2] = fuel_type[1]
+    fuel_map[:, domain_width // 2:] = fuel_type[1]
     
     horizontal_wind = config['horizontal_wind']
     vertical_wind = config['vertical_wind']
@@ -93,7 +102,13 @@ def hill_simulation(config):
         float(simulation.ff["SWx"]) + float(simulation.ff["Lx"]),
         float(simulation.ff["SWy"]),
         float(simulation.ff["SWy"]) + float(simulation.ff["Ly"]))
-    plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None)
+    
+    if save_exp:
+        plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None, save_exp=save_exp)
+        with open(os.path.join(save_exp, 'config.yaml'), 'w') as outfile:
+            yaml.dump(config, outfile, default_flow_style=False)
+    else:
+        plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
