@@ -1,8 +1,8 @@
-propagation_model: RothermelAndrews2018
-nn_ros_model_path:
-# propagation_model: ANNPropagationModel
-# nn_ros_model_path: /home/ai4geo/Documents/nn_ros_models/nn_abs_256_RothermelAndrews2018/saved_model.ffann
-fuel_type: [1, 6]
+# propagation_model: RothermelAndrews2018
+# nn_ros_model_path:
+propagation_model: ANNPropagationModel
+nn_ros_model_path: /home/ai4geo/Documents/nn_ros_models/nn_abs_256_RothermelAndrews2018/saved_model.ffann
+fuel_type: [2, 6]
 domain_width: 1000
 domain_height: 1000
 horizontal_wind: 20.0

@@ -106,16 +106,38 @@ def hill_simulation(config):
         float(simulation.ff["SWy"]),
         float(simulation.ff["SWy"]) + float(simulation.ff["Ly"]))
     
+
+    # Set ForeFire simulation directory
+    simulation.ff['caseDirectory'] = '/'.join(save_exp.split('/')[:-1])
+    simulation.ff['fireOutputDirectory'] = save_exp.split('/')[-1]
+    simulation.ff['experiment'] = 'simulation'
+    
     if save_exp:
+        # Save simulation contour lines
         plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None, title=propagation_model, save_exp=save_exp)
+        
+        # Save config file
         with open(os.path.join(save_exp, 'config.yaml'), 'w') as outfile:
             yaml.dump(config, outfile, default_flow_style=False)
 
+        # Save altitude map
         fig = plt.figure()
         plt.imshow(altitude_map)
         plt.colorbar()
         plt.title('Altitude (m)')
         plt.savefig(os.path.join(save_exp, 'altitude.pdf'),  dpi=100, bbox_inches='tight', pad_inches=0.05)
+
+        # Save matrix of burned area and arrival time
+        simulation.ff.execute("save[]")
+        sim_res = xr.open_dataset(os.path.join(save_exp, simulation.ff['experiment'] + '.0.nc'))
+        arrival_time = sim_res.arrival_time_of_front.data
+
+        fig = plt.figure()
+        arrival_time[arrival_time < 0] = 0
+        plt.imshow(arrival_time)
+        plt.colorbar()
+        plt.savefig(os.path.join(save_exp, 'arrival_time.pdf'),  dpi=100, bbox_inches='tight', pad_inches=0.05)
+
     else:
         plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, title=propagation_model)
 
