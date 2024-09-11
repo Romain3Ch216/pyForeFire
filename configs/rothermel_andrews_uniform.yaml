@@ -1,3 +1,4 @@
+script: uniform_simulation.py
 propagation_model: RothermelAndrews2018
 nn_ros_model_path:
 fuel_type: 6

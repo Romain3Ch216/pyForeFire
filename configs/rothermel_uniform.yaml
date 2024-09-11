@@ -1,3 +1,4 @@
+script: uniform_simulation.py
 propagation_model: Rothermel
 nn_ros_model_path:
 fuel_type: 141
@@ -15,6 +16,6 @@ perimeter_resolution: 2
 minimal_propagative_front_depth: 5 # resolution of arrival time matrix
 min_speed: 0.0
 max_speed: 20.0
-relax: 0.2
+relax: 1
 propagation_speed_adjustment_factor: 1
 burned_map_layer: 

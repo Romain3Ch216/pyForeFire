@@ -1,3 +1,4 @@
+script: uniform_simulation.py
 propagation_model: ANNPropagationModel
 nn_ros_model_path: /home/ai4geo/Documents/nn_ros_models/nn_abs_256_RothermelAndrews2018/saved_model.ffann
 fuel_type: 6

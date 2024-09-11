@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 import os
-import sys
 import pdb
 
 
@@ -31,6 +30,9 @@ def hill_simulation(config):
                             
     propagation_model = config['propagation_model']
     nn_ros_model_path = config['nn_ros_model_path']
+
+    if config['logger']:
+        logger_path = f'{propagation_model}db.csv'
 
     if 'fuels_table' in config:
         fuels_table = fuels_table
@@ -90,11 +92,15 @@ def hill_simulation(config):
         perimeter_resolution,
         relax,
         min_speed,
-        burned_map_layer
+        burned_map_layer,
+        logger_path
     )
 
     nb_steps = config['nb_steps']
     step_size = config['step_size']
+    
+    # if logger_path:
+    #     simulation.ff['FFBMapLoggerCSVPath'] = logger_path
 
     # Run simulation
     pathes = simulation(nb_steps, step_size)
@@ -168,7 +174,4 @@ if __name__ == '__main__':
     else:
         config = vars(args)
 
-    if sys.argv[0].split('/')[-1] == config['script']:
-        hill_simulation(config)
-    else:
-        print(f"Wrong config file: current config is only compatible with {config['script']}!")
+    hill_simulation(config)
