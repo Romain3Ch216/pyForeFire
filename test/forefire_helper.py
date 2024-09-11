@@ -13,16 +13,14 @@ import os
 
 
 def get_fuels_table(propagation_model):
-    if propagation_model == 'RothermelAndrews2018':
+    if 'RothermelAndrews2018' in propagation_model:
         return RothermelAndrews2018FuelTable
-    elif propagation_model == 'Rothermel':
+    elif 'Rothermel' in propagation_model:
         return standardRothermelFuelTable
-    elif propagation_model == 'ANNPropagationModel':
-        #TODO: fix for a more general use
-        return RothermelAndrews2018FuelTable
     else:
-        raise NotImplementedError
-
+        # TODO: fix this
+        # raise NotImplementedError
+        return RothermelAndrews2018FuelTable
 
 def RothermelAndrews2018FuelTable():
     """

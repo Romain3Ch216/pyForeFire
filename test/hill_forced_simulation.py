@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 import os
+from forefire_TF_helpers import save_model_structure2
+import tensorflow as tf
 import pdb
 
 
@@ -30,9 +32,15 @@ def hill_simulation(config):
                             
     propagation_model = config['propagation_model']
     nn_ros_model_path = config['nn_ros_model_path']
+    inputs = config['inputs']
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(1, activation='relu', input_shape=(1,))
+    ])
+    model_path = os.path.join(save_exp, propagation_model + '.ffann')
+    save_model_structure2(model, model_path, inputs, 'ROS')
 
     if config['logger']:
-        logger_path = f'{propagation_model}db.csv'
+        logger_path = os.path.join(save_exp, f'{propagation_model}_db.csv')
 
     if 'fuels_table' in config:
         fuels_table = fuels_table
@@ -71,36 +79,27 @@ def hill_simulation(config):
     vertical_wind = config['vertical_wind']
 
     fire_front = config['fire_front']
-    spatial_increment = config['spatial_increment']
-    minimal_propagative_front_depth = config['minimal_propagative_front_depth']
-    perimeter_resolution = config['perimeter_resolution']
-    relax = config['relax']
-    min_speed = config['min_speed']
-    burned_map_layer = config['burned_map_layer']
+    fire_observation = config['fire_observation']
+
+    kwargs = {
+        'fire_observation': fire_observation,
+        'logger_path': logger_path,
+        'model_path': model_path,
+    }
 
     simulation = UniformWindForeFireSimulation(
-        propagation_model,
+        "BMapLoggerForANNTraining",
         fuels_table,
         horizontal_wind,
         vertical_wind,
         fuel_map,
         altitude_map,
         fire_front,
-        nn_ros_model_path,
-        spatial_increment,
-        minimal_propagative_front_depth,
-        perimeter_resolution,
-        relax,
-        min_speed,
-        burned_map_layer,
-        logger_path
+        **kwargs
     )
 
     nb_steps = config['nb_steps']
     step_size = config['step_size']
-    
-    # if logger_path:
-    #     simulation.ff['FFBMapLoggerCSVPath'] = logger_path
 
     # Run simulation
     pathes = simulation(nb_steps, step_size)
