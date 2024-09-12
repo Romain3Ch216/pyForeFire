@@ -9,21 +9,67 @@ from simulation import UniformWindForeFireSimulation
 from forefire_helper import get_fuels_table
 import xarray as xr
 import sys
+import logging
+
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger('BuildDB')
 
 
 def main(
+    db_folder,
+    propagation_model,
+    model_inputs,
+    domain_width,
+    domain_height,
+    fuel_type,
+    nb_steps,
+    step_size,
+    run_id
+    ):
+    logger.info(f'Run simulation {run_id} to build fake observations.')
+    emulator_path, simulation_inputs = \
+        run_simulation(
+            db_folder,
+            propagation_model,
+            model_inputs,
+            domain_width,
+            domain_height,
+            fuel_type,
+            nb_steps,
+            step_size,
+            run_id
+        )
+    horizontal_wind, vertical_wind, altitude_map, fuel_map, fire_front = simulation_inputs
+
+    logger.info(f'Build training data set from simulation {run_id}.')
+    make_db(
         db_folder,
-        propagation_model,
-        model_inputs,
-        domain_width,
-        domain_height,
-        fuel_type,
+        emulator_path,
+        horizontal_wind,
+        vertical_wind,
+        altitude_map,
+        fuel_map,
+        fire_front,
         nb_steps,
         step_size,
-        run_id
+        run_id)
+
+
+def run_simulation(
+    db_folder,
+    propagation_model,
+    model_inputs,
+    domain_width,
+    domain_height,
+    fuel_type,
+    nb_steps,
+    step_size,
+    run_id
     ):
     emulator_path = os.path.join(db_folder, propagation_model + '.ffann')
-    init_emulator(model_inputs, emulator_path)
+    if not os.path.exists(emulator_path):
+        init_emulator(model_inputs, emulator_path)
 
     fuels_table = get_fuels_table(propagation_model)
 
@@ -49,6 +95,41 @@ def main(
     simulation.ff['experiment'] = f'simulation_{run_id}'
 
     simulation.ff.execute("save[]")
+
+    return emulator_path, (horizontal_wind, vertical_wind, altitude_map, fuel_map, fire_front)
+
+def make_db(
+        db_folder,
+        emulator_path,
+        horizontal_wind,
+        vertical_wind,
+        altitude_map,
+        fuel_map,
+        fire_front,
+        nb_steps,
+        step_size,
+        run_id
+    ):
+    logger_path = os.path.join(db_folder, f'simulation_{run_id}_db.csv')
+    fire_observation = os.path.join(db_folder, f'simulation_{run_id}.0.nc')
+    propagation_model = "BMapLoggerForANNTraining"
+    fuels_table = get_fuels_table(emulator_path.split('/')[-1].split('.')[0])
+
+    simulation = UniformWindForeFireSimulation(
+        propagation_model,
+        fuels_table,
+        horizontal_wind,
+        vertical_wind,
+        fuel_map,
+        altitude_map,
+        fire_front,
+        fire_observation,
+        logger_path,
+        emulator_path
+    )
+
+    simulation(nb_steps, step_size)
+
 
 
 def random_fire_front(domain_width, domain_height, size=0.05):

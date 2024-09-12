@@ -10,7 +10,7 @@ from forefire_helper import *
 import pdb
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-logger = logging.getLogger()
+logger = logging.getLogger('ForeFireSimulation')
 
 class ForeFireSimulation:
     """
