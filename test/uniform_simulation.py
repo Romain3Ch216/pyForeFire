@@ -36,13 +36,13 @@ def uniform_simulation(config):
         fuel_type,
         slope,
         fire_front,
-        nn_ros_model_path,
-        spatial_increment,
-        minimal_propagative_front_depth,
-        perimeter_resolution,
-        relax,
-        min_speed,
-        burned_map_layer,
+        nn_ros_model_path=nn_ros_model_path,
+        spatial_increment=spatial_increment,
+        minimal_propagative_front_depth=minimal_propagative_front_depth,
+        perimeter_resolution=perimeter_resolution,
+        relax=relax,
+        min_speed=min_speed,
+        burned_map_layer=burned_map_layer,
     )
 
     nb_steps = config['nb_steps']

@@ -624,7 +624,7 @@ def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None, 
         plt.title(title)
         
     if save_exp:
-        plt.savefig(os.path.join(save_exp, 'simulation_plot.pdf'),  dpi=100, bbox_inches='tight', pad_inches=0.05)
+        plt.savefig(os.path.join(save_exp),  dpi=100, bbox_inches='tight', pad_inches=0.05)
     else:
         plt.show()
 

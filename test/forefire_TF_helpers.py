@@ -1,6 +1,9 @@
 import struct
 import numpy as np
 import tensorflow as tf
+import os
+import json
+
 
 def save_model_structure2(model, filename, input_names=None, output_names=None):
     with open(filename, 'wb') as file:
@@ -244,3 +247,11 @@ def load_model_structure2(filename):
         output_names = output_names_bytes.decode().split(',') if output_names_bytes else []
 
         return model, input_names, output_names
+
+
+def save_to_json(x, file):
+    folder = '/'.join(file.split('/')[:-1])
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    with open(file, 'w') as f:
+        json.dump(x, f, indent=4)

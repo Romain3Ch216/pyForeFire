@@ -23,8 +23,10 @@ class ForeFireSimulation:
             spatial_increment: Optional[float] = None,
             minimal_propagative_front_depth: Optional[float] = None,
             perimeter_resolution: Optional[float] = None,
+            look_ahead_distance_for_time_gradient: Optional[float] = None,
             relax: Optional[float] = None,
             min_speed: Optional[float] = None,
+            max_speed: Optional[float] = None,
             burned_map_layer: Optional[int] = None,
             ):
         """
@@ -38,6 +40,7 @@ class ForeFireSimulation:
             spatial_increment (float): distance (in meters) between new and old node position
             minimal_propagative_front_depth (float): resolution (in meters) of the arrival time matrix
             perimiter_resolution (float): maximal distance (in meters) between two nodes
+            look_ahead_distance_for_time_gradient (float): distance dx (in meters) to compute the gradient of the arrival time layer
             relax (float): weights the new and old ROS (ROS = relax x new_ROS + (1 - relax) x old_ROS)
             min_speed (float): minimal speed (m/s), i.e. ROS = max(ROS, min_speed)
             max_speed (float): maximal speed (m/S), i.e. ROS = min(ROS, max_speed)
@@ -57,11 +60,17 @@ class ForeFireSimulation:
         if perimeter_resolution:
             assert perimeter_resolution > 0, 'perimeter_resolution must be strictly positive'
             ff["perimeterResolution"] = perimeter_resolution
+        if look_ahead_distance_for_time_gradient:
+            assert look_ahead_distance_for_time_gradient >= 2 * float(ff["minimalPropagativeFrontDepth"]), \
+                'look_ahead_distance_for_time_gradient should be at least equal to two times the minimal_propagative_front_depth'
+            ff['LookAheadDistanceForeTimeGradientDataLayer'] = look_ahead_distance_for_time_gradient
         if relax:
             assert 0 <= relax <= 1, 'relax must be in [0, 1]'
             ff["relax"] = relax
         if min_speed:
             ff["minSpeed"] = min_speed
+        if max_speed:
+            ff["maxSpeed"] = max_speed
         if burned_map_layer:
             ff["bmapLayer"] = burned_map_layer
 
@@ -118,13 +127,18 @@ class UniformForeFireSimulation(ForeFireSimulation):
         fuel_type: float,
         slope: float,
         fire_front: List[List[float]],
+        fire_observation: str = None,
+        logger_path: str = None,
+        model_path: str = None,
         nn_ros_model_path: Optional[str] = None,
         spatial_increment: Optional[float] = None,
         minimal_propagative_front_depth: Optional[float] = None,
         perimeter_resolution: Optional[float] = None,
-        relax: Optional[float] = None,
+        relax: Optional[float] = 0.5,
         min_speed: Optional[float] = None,
+        max_speed: Optional[float] = None,
         burned_map_layer: Optional[int] = None,
+        look_ahead_distance_for_time_gradient: Optional[float] = None,
         data_resolution: float = 1
     ):
         super().__init__(
@@ -135,6 +149,7 @@ class UniformForeFireSimulation(ForeFireSimulation):
             perimeter_resolution,
             relax,
             min_speed,
+            max_speed,
             burned_map_layer,
             )
         
@@ -145,6 +160,11 @@ class UniformForeFireSimulation(ForeFireSimulation):
             f'FireDomain[sw=({self.ff["SWx"]},{self.ff["SWy"]},0);ne=({self.ff["SWx"] + self.ff["Lx"]},{self.ff["SWy"] + self.ff["Ly"]},0);t=0]'
         logger.info(domain_string)
         self.ff.execute(domain_string)
+
+        if logger_path:
+            self.ff['FFBMapLoggerCSVPath'] = logger_path
+            self.ff['FFANNPropagationModelPath'] = model_path
+            self.ff["LookAheadDistanceForeTimeGradientDataLayer"] = look_ahead_distance_for_time_gradient
 
         # Propagation model layer
         if nn_ros_model_path:
@@ -176,6 +196,18 @@ class UniformForeFireSimulation(ForeFireSimulation):
         self.altitude_map[:, :, :] = np.linspace(0, domain_width, domain_width // data_resolution) * math.tan(slope)
         self.ff.addScalarLayer("table", "altitude", 0, 0, 0, domain_width, domain_height, 0, self.altitude_map)
 
+        # Observation layer
+        if fire_observation:
+            obs = xr.open_dataset(fire_observation)
+            arrival_time_map = np.expand_dims(np.expand_dims(obs.arrival_time_of_front.data, axis=0), axis=0)
+            arrival_time_map[arrival_time_map <=0] = 0
+            obs.close()
+            self.ff.addScalarLayer(
+                "data", 
+                "forced_arrival_time_of_front", 
+                float(self.ff["SWx"]), float(self.ff["SWy"]), 0, float(self.ff["Lx"]), float(self.ff["Ly"]), 0, 
+                arrival_time_map) 
+
         # Instantiate fire front (front orentation is clockwise!!)
         self.ff.execute(f"\tFireFront[id=2;domain=0;t=0]")
         for (xp, yp) in fire_front:
@@ -185,8 +217,7 @@ class UniformForeFireSimulation(ForeFireSimulation):
 
 class UniformWindForeFireSimulation(ForeFireSimulation):
     """
-    Class for a ForeFire simulation with uniform wind, uniform fuel (only one fuel type)
-    and uniform slope.
+    Class for a ForeFire simulation with uniform wind.
     """
     def __init__(
         self,
@@ -204,6 +235,7 @@ class UniformWindForeFireSimulation(ForeFireSimulation):
         spatial_increment: Optional[float] = None,
         minimal_propagative_front_depth: Optional[float] = None,
         perimeter_resolution: Optional[float] = None,
+        look_ahead_distance_for_time_gradient: Optional[float] = None,
         relax: Optional[float] = None,
         min_speed: Optional[float] = None,
         burned_map_layer: Optional[int] = None,
@@ -214,6 +246,7 @@ class UniformWindForeFireSimulation(ForeFireSimulation):
             spatial_increment,
             minimal_propagative_front_depth,
             perimeter_resolution,
+            look_ahead_distance_for_time_gradient,
             relax,
             min_speed,
             burned_map_layer,
@@ -261,8 +294,8 @@ class UniformWindForeFireSimulation(ForeFireSimulation):
 
         # Altitude layer
         self.altitude_map = altitude_map.reshape(1, 1, domain_height, domain_width)
-        self.ff.addIndexLayer(
-            "data", 
+        self.ff.addScalarLayer(
+            "table", 
             "altitude", float(self.ff["SWx"]), float(self.ff["SWy"]), 0, float(self.ff["Lx"]), float(self.ff["Ly"]), 0, 
             self.altitude_map)
 

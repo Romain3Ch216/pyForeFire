@@ -4,9 +4,9 @@ nn_ros_model_path:
 fuel_type: 6
 domain_width: 2000
 domain_height: 2000
-horizontal_wind: 200.0
+horizontal_wind: 5.0
 vertical_wind: 0.0
-slope: 0
+slope: 45
 nb_steps: 10
 step_size: 10
 fire_front: [[950, 1050], [1000, 1000], [950, 950]]
@@ -16,6 +16,6 @@ perimeter_resolution: 2 # max distance between two nodes
 minimal_propagative_front_depth: 5 # resolution of arrival time matrix
 min_speed: 0.0
 max_speed: 100.0
-relax: 1 # takes 0.2 of the new ROS and 0.8 of the old ROS, to set in function of spatial_increment!
+relax: 0.2 # takes 0.2 of the new ROS and 0.8 of the old ROS, to set in function of spatial_increment!
 propagation_speed_adjustment_factor: 1
 burned_map_layer: 
